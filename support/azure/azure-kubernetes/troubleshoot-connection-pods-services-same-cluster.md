@@ -64,12 +64,19 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
 
    ```bash
    kubectl get pods -n <namespace-name>
+   
+   # You should see "Running" status of the Pods, and that the Ready state is accurate.
+   NAME           READY   STATUS    RESTARTS   AGE
+   my-other-pod   1/1     Running   0          44m
+   my-pod         1/1     Running   0          44m
    ```
 
 1. View the logs of the pod.
 
    ```bash
    kubectl logs <pod-name> -n <namespace-name>
+   
+   # In the Pod logs, you can look for errors, indicating issues with access of the Pod.
    ```
 
 1. View the logs for an individual container in a multicontainer pod.
@@ -81,31 +88,56 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
 1. View the `stdout` dump pod logs for a previous container instance.
 
    ```bash
-   kubectl logs <pod-name> --previous                      
+   kubectl logs <pod-name> --previous
+   
+   # If the application inside the Pod keeps on restarting, you can view the logs of the previous instance of the container, and get the exit messages.
    ```
 
 1. View the `stdout` dump pod container logs (multicontainer case) for a previous container instance.
 
    ```bash
    kubectl logs <pod-name> -c <container-name> --previous  
+   
+   # If the application inside the Pod keeps on restarting, you can view the logs of the previous instance of the container, and get the exit messages.
    ```
 
 1. Check whether there are any network policies that might block the traffic.
 
    ```bash
    kubectl get networkpolicy -A
+   
+   NAMESPACE     NAME                 POD-SELECTOR             AGE
+   kube-system   konnectivity-agent   app=konnectivity-agent   4d1h
+   
+   # If you see any other Network Policy, which is custom created, kindly verify if that could be blocking access to/from the Pods.
    ```
 
 1. Check whether you can reach the application from the service IP address.
 
    ```bash
+   kubectl get service
+   NAME         TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)        AGE
+   my-service   LoadBalancer   10.0.21.43   20.119.121.232   80:31773/TCP   28s
+   
    curl -Iv http://<service-ip-address>:<port>
+   
+   curl -Iv http://20.119.121.232:80
+   .
+   .
+   .
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
    ```
 
 1. Show details about the service resource.
 
    ```bash
    kubectl get svc -n <namespace-name>
+   
+   NAME         TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)        AGE
+   my-service   LoadBalancer   10.0.21.43   20.119.121.232   80:31773/TCP   5m35s
+   
+   # Check if the Service has the IPs allo
    ```
 
 1. Get more verbose information about the service.
@@ -159,6 +191,7 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
    ```bash
    kubectl top nodes
    ```
+
 
    You could also use [Azure Monitor to get the utilization data for the cluster](/azure/aks/monitor-aks).
 

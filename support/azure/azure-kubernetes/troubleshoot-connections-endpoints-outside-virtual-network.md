@@ -93,12 +93,27 @@ kubectl top pods
 kubectl top nodes
 ```
 
-#### Is the operating system disk heavily used?
+**#### Is the operating system disk heavily used?**
+
+You can navigate to the VMSS Portal, and select the Virtual Machine Scale Set for your AKS Cluster. Under the Metrics section, you can explore the [OS Disk and Data Disk metrics](https://learn.microsoft.com/en-us/azure/virtual-machines/disks-metrics).
+
+You can get the Disk Metrics from the `Metrics` section in VMSS as:
+
+- Scope: VMSS Name
+- Metrics Namespace: Virtual Machine Host
+- Metrics: OS and Data Disk Metric
+
+AKS also provides Recommendations based on the Disk Utilization. You can navigate to the AKS Portal, and jump to `Advisor Recommendations` to see recommendations about the Disk usage.
 
 If the OS disk is used heavily, consider using the following remedies:
 
-- Increase the OS disk size.
-- Switch to [Ephemeral OS disks](/azure/aks/cluster-configuration#ephemeral-os).
+
+
+\- Increase the OS disk size.
+
+\- Switch to [Ephemeral OS disks](/azure/aks/cluster-configuration#ephemeral-os).
+
+
 
 If these remedies don't solve the issue, analyze the process that does heavy read/write operations on the disk. Then, check whether you can move the actions to a data disk instead of the OS disk.
 
