@@ -1,10 +1,10 @@
 ---
 title: Troubleshoot connections to pods and services within an AKS cluster
 description: Troubleshoot connections to pods and services (internal traffic) from within an Azure Kubernetes Service (AKS) cluster.
-ms.date: 9/30/2022
+ms.date: 10/12/2022
 author: DennisLee-DennisLee
 ms.author: v-dele
-ms.reviewer: chiragpa
+ms.reviewer: chiragpa, rissing
 editor: v-jsitser
 ms.service: container-service
 #Customer intent: As an Azure Kubernetes user, I want to troubleshoot connections to pods and services so that I don't experience outbound connection issues from an Azure Kubernetes Service (AKS) cluster.
@@ -29,7 +29,7 @@ This article discusses how to troubleshoot connection issues to pods or services
 
 You'll need to set up the test pod and make sure that the required port is open on the remote server. From within the source pod (or a test pod that's in the same namespace as the source pod), follow these steps:
 
-1. Start a test pod in the cluster by running the [kubectl run]() command:
+1. Start a test pod in the cluster by running the [kubectl run](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#run) command:
 
    ```bash
    kubectl run -it --rm aks-ssh --namespace <namespace> --image=debian:stable
@@ -66,7 +66,15 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
    kubectl get pods -n <namespace-name>
    ```
 
-1. View the logs of the pod.
+   If the destination pod is working correctly, the pod status will be shown as `Running`, and the pod will be shown as `READY`.
+
+   ```output
+   NAME           READY   STATUS    RESTARTS   AGE
+   my-other-pod   1/1     Running   0          44m
+   my-pod         1/1     Running   0          44m
+   ```
+
+1. View the pod logs, which might indicate pod access errors.
 
    ```bash
    kubectl logs <pod-name> -n <namespace-name>
@@ -78,13 +86,11 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
    kubectl logs <pod-name> -n <namespace-name> -c <container-name>
    ```
 
-1. View the `stdout` dump pod logs for a previous container instance.
+1. If the application that's inside the pod restarts repeatedly, view the `stdout` dump pod logs of a previous container instance to get the exit messages. For the multicontainer case, get the exit messages by viewing the `stdout` dump pod container logs for a previous container instance.
 
    ```bash
    kubectl logs <pod-name> --previous                      
    ```
-
-1. View the `stdout` dump pod container logs (multicontainer case) for a previous container instance.
 
    ```bash
    kubectl logs <pod-name> -c <container-name> --previous  
@@ -93,39 +99,64 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
 1. Check whether there are any network policies that might block the traffic.
 
    ```bash
-   kubectl get networkpolicy -A
+   kubectl get networkpolicies -A
    ```
 
-1. Check whether you can reach the application from the service IP address.
+   You should see output that resembles the following table:
 
-   ```bash
-   curl -Iv http://<service-ip-address>:<port>
+   ```output
+   NAMESPACE     NAME                 POD-SELECTOR             AGE
+   kube-system   konnectivity-agent   app=konnectivity-agent   4d1h
    ```
 
-1. Show details about the service resource.
+   If you see any other network policy that's custom-created, check whether that policy is blocking access to or from the pods.
+
+1. Check whether you can reach the application from the service IP address. First, show details about the service resource, such as the external IP address and port, by running the `kubectl get services` command:
 
    ```bash
-   kubectl get svc -n <namespace-name>
+   kubectl get services -n <namespace-name>
+   ```
+
+   ```output
+   NAME         TYPE           CLUSTER-IP   EXTERNAL-IP      PORT(S)        AGE
+   my-service   LoadBalancer   10.0.21.43   20.119.121.232   80:31773/TCP   28s
+   ```
+
+   Then, run cURL using that IP address and port to check whether you can reach the application:
+
+   ```console
+   curl -Iv http://20.119.121.232:80
+   .
+   .
+   .
+   < HTTP/1.1 200 OK
+   HTTP/1.1 200 OK
    ```
 
 1. Get more verbose information about the service.
 
    ```bash
-   kubectl describe svc <service-name> -n <namespace-name>
+   kubectl describe services <service-name> -n <namespace-name>
    ```
 
 1. Verify whether the pod's IP address is present as an endpoint in the service.
 
-   ```console
-   $ kubectl get pods -o wide  # Check the pod's IP address.
+   ```bash
+   kubectl get pods -o wide  # Check the pod's IP address.
+   ```
+
+   ```output
    NAME            READY   STATUS        RESTARTS   AGE   IP            NODE                                
    my-pod          1/1     Running       0          12m   10.244.0.15   aks-agentpool-000000-vmss000000  
    ```
 
 1. Check the endpoints in the service.
 
-   ```console
-   $ kubectl describe service my-cluster-ip-service
+   ```bash
+   kubectl describe services my-cluster-ip-service
+   ```
+
+   ```output
    Name:              my-cluster-ip-service
    Namespace:         default
    Selector:          app=my-pod
@@ -141,8 +172,11 @@ Using kubectl and cURL at the command line, follow these steps to check that eve
 
 1. Check the endpoints directly for verification.
 
-   ```console
-   $ kubectl get endpoints
+   ```bash
+   kubectl get endpoints
+   ```
+
+   ```output
    NAME                      ENDPOINTS           AGE
    my-cluster-ip-service     10.244.0.15:80      14m
    ```

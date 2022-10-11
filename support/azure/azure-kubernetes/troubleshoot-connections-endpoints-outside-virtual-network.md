@@ -1,10 +1,10 @@
 ---
 title: Troubleshoot connections to endpoints outside the virtual network
 description: Troubleshoot connections to endpoints outside the virtual network (through the public internet) from an Azure Kubernetes Service (AKS) cluster.
-ms.date: 9/30/2022
+ms.date: 10/12/2022
 author: DennisLee-DennisLee
 ms.author: v-dele
-ms.reviewer: chiragpa
+ms.reviewer: chiragpa, rissing
 editor: v-jsitser
 ms.service: container-service
 #Customer intent: As an Azure Kubernetes user, I want to troubleshoot connections to endpoints outside the virtual network so that I don't experience outbound connection issues from an Azure Kubernetes Service (AKS) cluster.
@@ -95,9 +95,35 @@ kubectl top nodes
 
 #### Is the operating system disk heavily used?
 
+To check whether the operating system disk is used heavily, follow these steps:
+
+1. In the [Azure portal](https://portal.azure.com), search for and select **Virtual machine scale sets**.
+1. In the list of scale sets, select the scale set that's used with your AKS cluster.
+1. In the scale set navigation pane, go to the **Monitoring** section and select **Metrics**.
+1. View the disk metrics for the scale set from the **Metrics** section by looking for the following fields:
+
+   | Field             | Value                       |
+   |-------------------|-----------------------------|
+   | Scope             | **VMSS Name**               |
+   | Metrics Namespace | **Virtual Machine Host**    |
+   | Metrics           | **OS and Data Disk Metric** |
+
+For more information about metrics, see [OS Disk and Data Disk metrics](/azure/virtual-machines/disks-metrics).
+
+To view AKS recommendations about disk utilization, follow these steps:
+
+1. In the [Azure portal](https://portal.azure.com), search for and select **Kubernetes services**.
+
+1. In the list of Kubernetes services, select the name of your AKS cluster.
+
+1. In the AKS cluster navigation pane, go to the **Monitoring** section and select **Advisor recommendations**.
+
+1. Review the listed recommendations about disk usage.
+
 If the OS disk is used heavily, consider using the following remedies:
 
 - Increase the OS disk size.
+
 - Switch to [Ephemeral OS disks](/azure/aks/cluster-configuration#ephemeral-os).
 
 If these remedies don't solve the issue, analyze the process that does heavy read/write operations on the disk. Then, check whether you can move the actions to a data disk instead of the OS disk.
